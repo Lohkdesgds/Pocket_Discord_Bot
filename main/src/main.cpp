@@ -8,59 +8,58 @@
 
 extern "C" { void app_main(void); }
 
-const uint64_t blk = ((uint64_t)1) << 8;
-const uint64_t maxx = ((((uint64_t)1) << 31) / blk);
-const char ch[blk] = {'0'};
 
 #include "discord/core.hpp"
-
-uint32_t get_clk()
-{
-    uint32_t val;
-    esp_clk_tree_src_get_freq_hz(SOC_MOD_CLK_CPU, ESP_CLK_TREE_SRC_FREQ_PRECISION_APPROX, &val);
-    return val;
-}
 
 
 void app_main(void)
 {
-    auto* bot = new Lunaris::PocketDiscord::Bot();
-    ESP_LOGI("CORE", "CLOCK: %lu", get_clk());
+    const Lunaris::PocketDiscord::ram_info b4{};
 
-    vTaskDelay(pdMS_TO_TICKS(10000));
-    //ESP_LOGI("CORE", "CLOCK: %lu", get_clk());
+    Lunaris::PocketDiscord::Bot* bot /*= nullptr;*/= new Lunaris::PocketDiscord::Bot();
 
+    //vTaskDelay(pdMS_TO_TICKS(10000));
+
+    /*for(size_t p = 0; p < 10; ++p) {
+        ESP_LOGI("MAIN", "================================ ITERATION %zu OF 10 ================================", p + 1);
+        bot = new Lunaris::PocketDiscord::Bot();
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        delete bot;
+        ESP_LOGI("MAIN", "================================ END OF ITERATION %zu OF 10 ================================", p + 1);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }*/
+    
     delete bot;
-    ESP_LOGI("DONE", "\nDONE\n");
     
-    
-
-    //FILE* fp = fopen("/sdcard/teste.txt", "wb+");
-    //if (!fp) ESP_LOGE("MAIN", "CANNOT OPEN FILE!");
-    //else {
-    //    ESP_LOGI("MAIN", "Writing a bunch of data");
-//
-    //    const auto b4 = esp_timer_get_time();
-//
-    //    for(uint64_t p = 0; p < maxx; ++p) {
-    //        if (p % 2048 == 0) ESP_LOGI("MAIN", "%.5f%c...", (100.0f * p / maxx),'%');
-    //        //fprintf(fp, "%lu\n", p);
-    //        fwrite(ch, sizeof(char), blk, fp);
-    //        fflush(fp);
-    //    }
-//
-    //    const auto af = esp_timer_get_time();
-//
-    //    ESP_LOGI("MAIN", "Good, time spent: %lli us", (af - b4));
-    //    fclose(fp);
-    //}
-    //fp = nullptr;
-    //
-    //unmount_card();
+    const Lunaris::PocketDiscord::ram_info af{};
+        
+    ESP_LOGI("MAIN", 
+        "Memory usage before:\n"
+        "Free: %zu\n"
+        "Total: %zu\n"
+        "Usage Percentage: %.2f%%",
+        b4.mem_free, b4.mem_total, 100.0f - b4.mem_free * 100.0f / b4.mem_total
+    );
+        
+    ESP_LOGI("MAIN", 
+        "Memory usage now:\n"
+        "Free: %zu\n"
+        "Total: %zu\n"
+        "Usage Percentage: %.2f%%",
+        af.mem_free, af.mem_total, 100.0f - af.mem_free * 100.0f / af.mem_total
+    );
 
     while(1) {
-        vTaskDelay(2000);
-        //ESP_LOGI("CORE", "CLOCK: %lu", get_clk());
-        //printf("Hello world\n");
+        vTaskDelay(pdMS_TO_TICKS(10000));
+        
+        const Lunaris::PocketDiscord::ram_info af2{};
+        
+        ESP_LOGI("MAIN", 
+            "Memory usage recurrent:\n"
+            "Free: %zu\n"
+            "Total: %zu\n"
+            "Usage Percentage: %.2f%%",
+            af2.mem_free, af2.mem_total, 100.0f - af2.mem_free * 100.0f / af2.mem_total
+        );
     }
 }

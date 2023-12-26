@@ -13,9 +13,9 @@ dependencies:
   pocket_discord:
     component_hash: null
     source:
-      path: Z:\DevVS\IDF_projs\discord_bot\components\pocket_discord
+      path: Z:\DevVS\IDF_projs\discord_bot_new\components\pocket_discord
       type: local
     version: '*'
-manifest_hash: 7da2861ef1a4faa91f654f29dc51e798b8875192ab1b69877acc119628eafab6
+manifest_hash: ab7bd27c2eb59ba0577584e0243a3ad91ea760a4c5553a17c1eb8495ee729c83
 target: esp32
 version: 1.0.0
