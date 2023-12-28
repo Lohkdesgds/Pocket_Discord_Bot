@@ -12,8 +12,8 @@
                 "${config:idf.espAdfPathWin}/components/**",
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/components/pocket_discord/include/**",
-                "${workspaceFolder}/managed_components/espressif__esp_websocket_client/include/**",
-                "${workspaceFolder}/main/include/**"
+                "${workspaceFolder}/managed_components/espressif__esp_websocket_client/include/**"
+                //"${workspaceFolder}/main/include/**"
                 //"C:/Users/ernes/esp/container/esp-idf/components/lwip/include"
             ],
             "browse": {
@@ -26,8 +26,8 @@
                     "${config:idf.espIdfPathWin}/components/lwip/src/include/compat/posix/**",
                     "${workspaceFolder}/**",
                     "${workspaceFolder}/components/pocket_discord/include/**",
-                    "${workspaceFolder}/managed_components/espressif__esp_websocket_client/include/**",
-                    "${workspaceFolder}/main/include/**"
+                    "${workspaceFolder}/managed_components/espressif__esp_websocket_client/include/**"
+                    //"${workspaceFolder}/main/include/**"
                 ],
                 "limitSymbolsToIncludedHeaders": false
             }

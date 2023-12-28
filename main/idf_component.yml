@@ -6,6 +6,8 @@ dependencies:
     version: ">=4.1.0"
   pocket_discord:
     path: ../components/pocket_discord
+  #cJSONL:
+  #  path: ../components/cJSONL
   # # Put list of dependencies here
   # # For components maintained by Espressif:
   # component: "~1.0.0"
