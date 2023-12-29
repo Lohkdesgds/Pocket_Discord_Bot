@@ -15,14 +15,50 @@ extern "C" { void app_main(void); }
 using namespace Lunaris;
 using namespace PocketDiscord;
 
-void event_handler(const gateway_events& ev, const pJSON& j)
-{
+void printch(char c) { putchar(c); }
 
+
+void post_ram_usage()
+{
+    const ram_info nw{};
+    ESP_LOGI("RAMDEBUG", "MEM=%.3f%% MEMEX=%.3f%% MEM32=%.3f%% MEMI=%.3f%%",
+        (100.0f - (nw.mem_free   * 100.0f / nw.mem_total)),
+        (100.0f - (nw.memex_free * 100.0f / nw.memex_total)),
+        (100.0f - (nw.mem32_free * 100.0f / nw.mem32_total)),
+        (100.0f - (nw.memi_free  * 100.0f / nw.memi_total))
+    );
+}
+
+void event_handler(const gateway_events& ev, const JSON& j)
+{
+    static const char* TAG = "EVHLR";
+    const char* prt = (const char*)j["t"];
+    if (prt == nullptr) prt = "NULL";
+
+    ESP_LOGI(TAG, "Got event %li (%s) at core %i. Memory info here:",
+        static_cast<int32_t>(ev), prt, (int)xPortGetCoreID()
+        
+    );
+
+    //j.print(printch, 0);
+    
+    post_ram_usage();
+}
+
+static void debug_memory_usage_total(void* param)
+{
+    while(1) {
+        post_ram_usage();
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
 
 void app_main(void)
 {
-    const ram_info b4{};
+    xTaskCreate(debug_memory_usage_total, "MEMTRACKD", 2048, nullptr, tskIDLE_PRIORITY, nullptr);
+
+    //const ram_info b4{};
+    vTaskDelay(pdMS_TO_TICKS(10000));
 
     BotBase* bot /*= nullptr;*/= new BotBase();
 
@@ -45,42 +81,42 @@ void app_main(void)
             gateway_intents::GUILD_MESSAGES |
             gateway_intents::GUILD_MEMBERS | 
             gateway_intents::GUILD_MESSAGE_REACTIONS,
-            event_handler);
+            event_handler, true);
 
-        vTaskDelay(pdMS_TO_TICKS(30000));
+        vTaskDelay(pdMS_TO_TICKS(120000));
     }
     
     delete bot;
     
-    const ram_info af{};
-        
-    ESP_LOGI("MAIN", 
-        "Memory usage before:\n"
-        "Free: %zu\n"
-        "Total: %zu\n"
-        "Usage Percentage: %.2f%%",
-        b4.mem_free, b4.mem_total, 100.0f - b4.mem_free * 100.0f / b4.mem_total
-    );
-        
-    ESP_LOGI("MAIN", 
-        "Memory usage now:\n"
-        "Free: %zu\n"
-        "Total: %zu\n"
-        "Usage Percentage: %.2f%%",
-        af.mem_free, af.mem_total, 100.0f - af.mem_free * 100.0f / af.mem_total
-    );
+    //const ram_info af{};
+    //    
+    //ESP_LOGI("MAIN", 
+    //    "Memory usage before:\n"
+    //    "Free: %zu\n"
+    //    "Total: %zu\n"
+    //    "Usage Percentage: %.2f%%",
+    //    b4.mem_free, b4.mem_total, 100.0f - b4.mem_free * 100.0f / b4.mem_total
+    //);
+    //    
+    //ESP_LOGI("MAIN", 
+    //    "Memory usage now:\n"
+    //    "Free: %zu\n"
+    //    "Total: %zu\n"
+    //    "Usage Percentage: %.2f%%",
+    //    af.mem_free, af.mem_total, 100.0f - af.mem_free * 100.0f / af.mem_total
+    //);
 
     while(1) {
         vTaskDelay(pdMS_TO_TICKS(10000));
         
-        const ram_info af2{};
-        
-        ESP_LOGI("MAIN", 
-            "Memory usage recurrent:\n"
-            "Free: %zu\n"
-            "Total: %zu\n"
-            "Usage Percentage: %.2f%%",
-            af2.mem_free, af2.mem_total, 100.0f - af2.mem_free * 100.0f / af2.mem_total
-        );
+        //const ram_info af2{};
+        //
+        //ESP_LOGI("MAIN", 
+        //    "Memory usage recurrent:\n"
+        //    "Free: %zu\n"
+        //    "Total: %zu\n"
+        //    "Usage Percentage: %.2f%%",
+        //    af2.mem_free, af2.mem_total, 100.0f - af2.mem_free * 100.0f / af2.mem_total
+        //);
     }
 }
