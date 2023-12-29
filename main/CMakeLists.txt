@@ -1,7 +1,7 @@
 idf_component_register(
     SRCS 
         src/main.cpp
-    INCLUDE_DIRS "."
+    INCLUDE_DIRS "." include
     #REQUIRES
     #  json esp_websocket_client esp_http_client
     PRIV_REQUIRES
