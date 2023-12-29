@@ -29,18 +29,17 @@ void post_ram_usage()
     );
 }
 
-void event_handler(const gateway_events& ev, const JSON& j)
+void event_handler(const gateway_events& t, const JSON& j)
 {
     static const char* TAG = "EVHLR";
-    const char* prt = (const char*)j["t"];
-    if (prt == nullptr) prt = "NULL";
+    //const char* prt = (const char*)j["t"];
+    //if (prt == nullptr) prt = "NULL";
 
-    ESP_LOGI(TAG, "Got event %li (%s) at core %i. Memory info here:",
-        static_cast<int32_t>(ev), prt, (int)xPortGetCoreID()
-        
+    ESP_LOGI(TAG, "Got event %li at core %i. Memory info here:",
+        static_cast<int32_t>(t), (int)xPortGetCoreID()
     );
 
-    //j.print(printch, 0);
+    j.print(printch, 0);
     
     post_ram_usage();
 }
@@ -81,9 +80,9 @@ void app_main(void)
             gateway_intents::GUILD_MESSAGES |
             gateway_intents::GUILD_MEMBERS | 
             gateway_intents::GUILD_MESSAGE_REACTIONS,
-            event_handler, true);
+            event_handler);
 
-        vTaskDelay(pdMS_TO_TICKS(120000));
+        vTaskDelay(pdMS_TO_TICKS(40000));
     }
     
     delete bot;
