@@ -10,15 +10,21 @@ extern "C" { void app_main(void); }
 
 
 #include "discord/core.hpp"
+#include "token.h" // define MY_DISCORD_TOKEN as "TOKEN..."
 
 using namespace Lunaris;
 using namespace PocketDiscord;
+
+void event_handler(const gateway_events& ev, const pJSON& j)
+{
+
+}
 
 void app_main(void)
 {
     const ram_info b4{};
 
-    BotBase* bot /*= nullptr;*/= new Lunaris::PocketDiscord::BotBase();
+    BotBase* bot /*= nullptr;*/= new BotBase();
 
     //vTaskDelay(pdMS_TO_TICKS(10000));
 
@@ -33,8 +39,15 @@ void app_main(void)
 
     {
         vTaskDelay(pdMS_TO_TICKS(1000));
-        auto thebot = bot->make_bot("TOKEN HERE", gateway_intents::NONE, nullptr);
-        vTaskDelay(pdMS_TO_TICKS(20000));
+
+        auto thebot = bot->make_bot(MY_DISCORD_TOKEN, 
+            gateway_intents::GUILDS |
+            gateway_intents::GUILD_MESSAGES |
+            gateway_intents::GUILD_MEMBERS | 
+            gateway_intents::GUILD_MESSAGE_REACTIONS,
+            event_handler);
+
+        vTaskDelay(pdMS_TO_TICKS(30000));
     }
     
     delete bot;
