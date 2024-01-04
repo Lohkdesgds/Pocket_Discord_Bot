@@ -47,7 +47,16 @@ void app_main(void)
             gateway_intents::GUILD_MESSAGE_REACTIONS,
             event_handler);
 
-        vTaskDelay(pdMS_TO_TICKS(40000));
+        vTaskDelay(pdMS_TO_TICKS(20000));
+
+        ESP_LOGI("MAIN", "Testing restart of gateway...");
+
+        thebot.gateway()->stop();
+        thebot.gateway()->start();
+        
+        ESP_LOGI("MAIN", "Gateway restart ended.");
+
+        vTaskDelay(pdMS_TO_TICKS(30000));
     }
 
     delete bot;
