@@ -47,6 +47,15 @@ void app_main(void)
             gateway_intents::GUILD_MESSAGE_REACTIONS,
             event_handler);
 
+        vTaskDelay(pdMS_TO_TICKS(10000));
+
+
+        ESP_LOGI("MAIN", "Trying get message on channel idk.");
+        
+        auto& resp = thebot.https()->post(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
+  
+        ESP_LOGI("MAIN", "Got status=%i content=%.*s", resp.get_status(), resp.get_content_raw_size(), resp.get_content_raw());
+        
         vTaskDelay(pdMS_TO_TICKS(20000));
 
         ESP_LOGI("MAIN", "Testing restart of gateway...");
