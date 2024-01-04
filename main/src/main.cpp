@@ -56,11 +56,11 @@ void app_main(void)
         ESP_LOGI("MAIN", "Trying get message on channel idk 6 times.");
         
         // 5 + 1
-        for(size_t a = 0; a < 5; ++a) thebot.https()->post(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
-        auto resp = thebot.https()->post(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
+        for(size_t a = 0; a < 5; ++a) thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
+        auto json = thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
   
-        ESP_LOGI("MAIN", "Got status=%i content:", resp.get_status());
-        resp.json()->print([](char c){ putchar(c); });
+        ESP_LOGI("MAIN", "Got status=%i content:", thebot.https()->get_status());
+        json.print([](char c){ putchar(c); });
         
         vTaskDelay(pdMS_TO_TICKS(20000));
 
@@ -71,7 +71,11 @@ void app_main(void)
         
         ESP_LOGI("MAIN", "Gateway restart ended.");
 
-        vTaskDelay(pdMS_TO_TICKS(30000));
+        vTaskDelay(pdMS_TO_TICKS(60000));
+
+        ESP_LOGI("MAIN", "Last GET.");
+        thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");        
+        ESP_LOGI("MAIN", "Last GET ended.");
     }
 
     delete bot;
