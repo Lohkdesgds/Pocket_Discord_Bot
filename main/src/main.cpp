@@ -10,7 +10,7 @@ extern "C" { void app_main(void); }
 
 
 #include "discord/core.hpp"
-#include "token.h" // define MY_DISCORD_TOKEN as "TOKEN..."
+#include "defaults.h"
 
 using namespace Lunaris;
 using namespace PocketDiscord;
@@ -40,7 +40,10 @@ void app_main(void)
     {
         vTaskDelay(pdMS_TO_TICKS(1000));
 
-        auto thebot = bot->make_bot(MY_DISCORD_TOKEN, 
+        HeapString token_dynamic;        
+        READFILE_FULLY_TO(token_dynamic, "token.txt", "Could not load token certificate.");
+
+        auto thebot = bot->make_bot(token_dynamic.c_str(), 
             //gateway_intents::GUILDS |
             gateway_intents::GUILD_MESSAGES |
             gateway_intents::GUILD_MEMBERS | 
@@ -50,11 +53,14 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(10000));
 
 
-        ESP_LOGI("MAIN", "Trying get message on channel idk.");
+        ESP_LOGI("MAIN", "Trying get message on channel idk 6 times.");
         
-        auto& resp = thebot.https()->post(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
+        // 5 + 1
+        for(size_t a = 0; a < 5; ++a) thebot.https()->post(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
+        auto resp = thebot.https()->post(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
   
-        ESP_LOGI("MAIN", "Got status=%i content=%.*s", resp.get_status(), resp.get_content_raw_size(), resp.get_content_raw());
+        ESP_LOGI("MAIN", "Got status=%i content:", resp.get_status());
+        resp.json()->print([](char c){ putchar(c); });
         
         vTaskDelay(pdMS_TO_TICKS(20000));
 
