@@ -17,7 +17,7 @@ using namespace PocketDiscord;
 
 
 void check_ram_notify();
-void event_handler(const gateway_events& t, const JSON& j);
+void event_handler(const gateway_events& t, const JSON& j, HTTPS* h, GatewayBot gb);
 
 static void debug_memory_usage_total(void* param)
 {
@@ -50,32 +50,32 @@ void app_main(void)
             gateway_intents::GUILD_MESSAGE_REACTIONS,
             event_handler);
 
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        vTaskDelay(pdMS_TO_TICKS(30000));
 
 
-        ESP_LOGI("MAIN", "Trying get message on channel idk 6 times.");
-        
-        // 5 + 1
-        for(size_t a = 0; a < 5; ++a) thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
-        auto json = thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
-  
-        ESP_LOGI("MAIN", "Got status=%i content:", thebot.https()->get_status());
-        json.print([](char c){ putchar(c); });
-        
-        vTaskDelay(pdMS_TO_TICKS(20000));
-
-        ESP_LOGI("MAIN", "Testing restart of gateway...");
-
-        thebot.gateway()->stop();
-        thebot.gateway()->start();
-        
-        ESP_LOGI("MAIN", "Gateway restart ended.");
-
-        vTaskDelay(pdMS_TO_TICKS(60000));
-
-        ESP_LOGI("MAIN", "Last GET.");
-        thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");        
-        ESP_LOGI("MAIN", "Last GET ended.");
+//        ESP_LOGI("MAIN", "Trying get message on channel idk 6 times.");
+//        
+//        // 5 + 1
+//        for(size_t a = 0; a < 5; ++a) thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
+//        auto json = thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
+//  
+//        ESP_LOGI("MAIN", "Got status=%i content:", thebot.https()->get_status());
+//        json.print([](char c){ putchar(c); });
+//        
+//        vTaskDelay(pdMS_TO_TICKS(20000));
+//
+//        ESP_LOGI("MAIN", "Testing restart of gateway...");
+//
+//        thebot.gateway()->stop();
+//        thebot.gateway()->start();
+//        
+//        ESP_LOGI("MAIN", "Gateway restart ended.");
+//
+//        vTaskDelay(pdMS_TO_TICKS(60000));
+//
+//        ESP_LOGI("MAIN", "Last GET.");
+//        thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");        
+//        ESP_LOGI("MAIN", "Last GET ended.");
     }
 
     delete bot;
@@ -83,13 +83,57 @@ void app_main(void)
     vTaskDelete(NULL);
 }
 
-void event_handler(const gateway_events& t, const JSON& j)
+void event_handler(const gateway_events& t, const JSON& j, HTTPS* h, GatewayBot gb)
 {
     static const char* TAG = "EVHLR";
+
 
     ESP_LOGI(TAG, "Got event %li at core %i in MAIN!",
         static_cast<int32_t>(t), (int)xPortGetCoreID()
     );
+
+    if (!h) {
+        ESP_LOGI(TAG, "HTTPS was not set yet.");
+        return;
+    }
+
+    switch(t) {
+    case gateway_events::MESSAGE_CREATE:
+        {
+            if (!j["author"]["bot"].get_bool()) {
+                const uint64_t m_mid = j["id"].get_uint();
+                const uint64_t m_cid = j["channel_id"].get_uint();
+                const uint64_t m_gid = j["guild_id"].get_uint();
+                const char* m_content = j["content"].get_string();
+
+                ESP_LOGI(TAG, "Message ev: %s", m_content);
+                gb.update_presence("This is the name", "This is the state", 0);
+
+                if (strncmp(m_content, "is the bot on?", strlen(m_content)) == 0) {
+                    
+                    char* buf = nullptr, *bufpost = nullptr;
+                    size_t len = 0, len_post = 0;
+
+                    saprintf(buf, &len,
+                        "{\"content\": \"Yes, I am alive!\",\"message_reference\":{\"message_id\":%llu,\"guild_id\":%llu,\"fail_if_not_exists\":false}}",
+                        m_mid, m_gid
+                    );
+                    saprintf(bufpost, &len_post,
+                        "/channels/%llu/messages",
+                        m_cid
+                    );
+
+                    h->request(http_request::POST, bufpost, buf, len);
+
+                    delete[] buf;
+                    delete[] bufpost;
+                }
+            }
+        }
+        break;
+    default:
+        break;    
+    }
 }
 
 
