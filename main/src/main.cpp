@@ -15,6 +15,7 @@ extern "C" { void app_main(void); }
 using namespace Lunaris;
 using namespace PocketDiscord;
 
+const uint64_t owner_id = 280450898885607425;
 
 void check_ram_notify();
 void event_handler(const gateway_events& t, const JSON& j, HTTPS* h, GatewayBot gb);
@@ -27,6 +28,8 @@ static void debug_memory_usage_total(void* param)
     }
 }
 
+bool g__keep_running = true;
+
 void app_main(void)
 {
     xTaskCreate(debug_memory_usage_total, "MEMTRACKD", 2560, nullptr, tskIDLE_PRIORITY, nullptr);
@@ -34,49 +37,25 @@ void app_main(void)
     vTaskDelay(pdMS_TO_TICKS(5000));
 
     BotBase* bot = new BotBase();
-
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    
+    HeapString token_dynamic;        
+    READFILE_FULLY_TO(token_dynamic, "token.txt", "Could not load token certificate.");
 
     {
-        vTaskDelay(pdMS_TO_TICKS(1000));
-
-        HeapString token_dynamic;        
-        READFILE_FULLY_TO(token_dynamic, "token.txt", "Could not load token certificate.");
-
         auto thebot = bot->make_bot(token_dynamic.c_str(), 
             //gateway_intents::GUILDS |
-            gateway_intents::GUILD_MESSAGES |
-            gateway_intents::GUILD_MEMBERS | 
+            //gateway_intents::GUILD_MESSAGES |
+            //gateway_intents::GUILD_MEMBERS | 
             gateway_intents::GUILD_MESSAGE_REACTIONS,
             event_handler);
 
-        vTaskDelay(pdMS_TO_TICKS(30000));
-
-
-//        ESP_LOGI("MAIN", "Trying get message on channel idk 6 times.");
-//        
-//        // 5 + 1
-//        for(size_t a = 0; a < 5; ++a) thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
-//        auto json = thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");
-//  
-//        ESP_LOGI("MAIN", "Got status=%i content:", thebot.https()->get_status());
-//        json.print([](char c){ putchar(c); });
-//        
-//        vTaskDelay(pdMS_TO_TICKS(20000));
-//
-//        ESP_LOGI("MAIN", "Testing restart of gateway...");
-//
-//        thebot.gateway()->stop();
-//        thebot.gateway()->start();
-//        
-//        ESP_LOGI("MAIN", "Gateway restart ended.");
-//
-//        vTaskDelay(pdMS_TO_TICKS(60000));
-//
-//        ESP_LOGI("MAIN", "Last GET.");
-//        thebot.https()->request(http_request::GET, "/channels/739230609527930940/messages/1192343873452769403");        
-//        ESP_LOGI("MAIN", "Last GET ended.");
+        while(g__keep_running) {
+            vTaskDelay(pdMS_TO_TICKS(10000));
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
     }
+
+    
 
     delete bot;
 
@@ -98,24 +77,116 @@ void event_handler(const gateway_events& t, const JSON& j, HTTPS* h, GatewayBot 
     }
 
     switch(t) {
-    case gateway_events::MESSAGE_CREATE:
+    case gateway_events::READY:
         {
+            GatewayPresence pre;
+            pre.set_gaming("In development!", "Try it owo").set_status(GatewayPresence::status::IDLE);
+            gb.send_presence((GatewayPresence&&)pre);
+        }
+        {
+            const char* slash_commands_hardcoded = u8"{\"name\": \"random\",\"description\": \"Get a random number\",\"options\":[]}";
+            const char* slash_commands_hardcoded2 = u8"{\"name\": \"shutdown\",\"description\": \"Turn it off safely (onwer only)\",\"options\":[]}";
+            h->request(http_request::POST, "/applications/1192811187407171644/commands", slash_commands_hardcoded, strlen(slash_commands_hardcoded));
+            h->request(http_request::POST, "/applications/1192811187407171644/commands", slash_commands_hardcoded2, strlen(slash_commands_hardcoded2));
+            
+        }
+        break;
+    case gateway_events::INTERACTION_CREATE:
+        {
+            //j.print([](char ch){putchar(ch);});
+
+            const uint64_t type = j["type"];
+            char* buf = nullptr, *bufpost = nullptr;
+            size_t len = 0, len_post = 0;
+            bool avoid_buf_delete = false;
+
+            switch(type) {
+            case 1: // PING // only for webhook apps
+                break;
+            case 2: // APPLICATION_COMMAND
+            {                
+                //const uint64_t chid = j["channel_id"].get_uint();
+                const auto jid = j["id"];
+                const auto jtk = j["token"];
+                const auto jcn = j["data"]["name"];
+                const auto jui = j["member"]["user"]["id"];
+
+
+                const HeapString id = jid.get_string();
+                const HeapString token = jtk.get_string();
+                const HeapString cmd_name = jcn.get_string();
+                const HeapString who_ran = jui.get_string();
+                const HeapString myself_for_now_idk = "280450898885607425";
+
+                if (strcmp(cmd_name.c_str(), "random") == 0)
+                {
+                    saprintf(buf, &len, // type: https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
+                        "{\"type\":4,\"data\":{\"content\":\"Your random number is: %lu - generated at timestamp %llu\"}}",
+                        esp_random(), get_time_ms()
+                    );
+                }
+                else if (strcmp(cmd_name.c_str(), "shutdown") == 0)
+                {
+                    if (strcmp(myself_for_now_idk.c_str(), who_ran.c_str()) == 0) {
+                        buf = (char*)"{\"type\":4,\"data\":{\"content\":\"Shutting down soon. Keep an eye on the LED\",\"flags\":64}}";
+                        len = strlen(buf);
+                        avoid_buf_delete = true;
+                        
+                        g__keep_running = false;
+                    }
+                    else {
+                        buf = (char*)"{\"type\":4,\"data\":{\"content\":\"You are not the owner! Not shutting down.\",\"flags\":64}}";
+                        len = strlen(buf);
+                        avoid_buf_delete = true;
+                    }
+                }
+
+
+                saprintf(bufpost, &len_post,
+                    "/interactions/%.*s/%.*s/callback",
+                    id.size(), id.c_str(), token.size(), token.c_str()
+                );  
+
+                //ESP_LOGI(TAG, "Sending %.*s @ %.*s ...", len, buf, len_post, bufpost);
+
+                const auto rj = h->request(http_request::POST, bufpost, buf, len);
+                //rj.print([](char ch){putchar(ch);});
+            }
+            case 3: // MESSAGE_COMPONENT
+            case 4: // APPLICATION_COMMAND_AUTOCOMPLETE
+            case 5: // MODAL_SUBMIT
+            default:
+                break;
+            }
+                        
+
+            if (!avoid_buf_delete) DEL_EM(buf);
+            DEL_EM(bufpost);
+        }
+        break;
+    /*case gateway_events::MESSAGE_CREATE:
+        j.print([](char ch){putchar(ch);});
+        {
+            //const auto author = j["author"];
             if (!j["author"]["bot"].get_bool()) {
                 const uint64_t m_mid = j["id"].get_uint();
                 const uint64_t m_cid = j["channel_id"].get_uint();
                 const uint64_t m_gid = j["guild_id"].get_uint();
-                const char* m_content = j["content"].get_string();
+                const uint64_t usrid = j["author"]["id"].get_uint();
+                const JSON m_content_ref = j["content"];
+                const char* m_content = m_content_ref.get_string();
+                if (m_content == nullptr) m_content = "NULL";
 
-                ESP_LOGI(TAG, "Message ev: %s", m_content);
-                gb.update_presence("This is the name", "This is the state", 0);
+                ESP_LOGI(TAG, "Message ev from %llu: %s", usrid, m_content);
+                //gb.__default_test();//update_presence("This is the name", "This is the state", 0);
 
-                if (strncmp(m_content, "is the bot on?", strlen(m_content)) == 0) {
-                    
-                    char* buf = nullptr, *bufpost = nullptr;
-                    size_t len = 0, len_post = 0;
+                
+                char* buf = nullptr, *bufpost = nullptr;
+                size_t len = 0, len_post = 0;
 
+                if (strcmp(m_content, "$shutdown") == 0 && usrid == owner_id) {
                     saprintf(buf, &len,
-                        "{\"content\": \"Yes, I am alive!\",\"message_reference\":{\"message_id\":%llu,\"guild_id\":%llu,\"fail_if_not_exists\":false}}",
+                        "{\"content\": \"Ok! Turning things off now.\",\"message_reference\":{\"message_id\":%llu,\"guild_id\":%llu,\"fail_if_not_exists\":false}}",
                         m_mid, m_gid
                     );
                     saprintf(bufpost, &len_post,
@@ -124,13 +195,27 @@ void event_handler(const gateway_events& t, const JSON& j, HTTPS* h, GatewayBot 
                     );
 
                     h->request(http_request::POST, bufpost, buf, len);
-
-                    delete[] buf;
-                    delete[] bufpost;
+                    g__keep_running = false;
                 }
+                else if (strcmp(m_content, "is the bot on?") == 0) {
+
+                    saprintf(buf, &len,
+                        "{\"content\": \"Yes, I am alive! For now...\",\"message_reference\":{\"message_id\":%llu,\"guild_id\":%llu,\"fail_if_not_exists\":false}}",
+                        m_mid, m_gid
+                    );
+                    saprintf(bufpost, &len_post,
+                        "/channels/%llu/messages",
+                        m_cid
+                    );
+
+                    h->request(http_request::POST, bufpost, buf, len);
+                }
+
+                DEL_EM(buf);
+                DEL_EM(bufpost);
             }
         }
-        break;
+        break;*/
     default:
         break;    
     }
